@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Amet'i Patakla</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+
+        :root {
+            --bg-dark: #0f172a;
+            --bg-red: #450a0a;
+            --primary: #f43f5e;
+            --accent: #fbbf24;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Bangers', cursive;
+            background: radial-gradient(circle at center, #1e293b 0%, var(--bg-dark) 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            cursor: crosshair;
+            transition: background 0.5s ease;
+        }
+
+        body.angry-bg {
+            background: radial-gradient(circle at center, #7f1d1d 0%, var(--bg-red) 100%);
+        }
+
+        /* Cam Efektli Üst Kısım */
+        #ui-layer {
+            width: 90%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-top: 20px;
+            z-index: 10;
+        }
+
+        #score-card {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 15px 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            transform: perspective(500px) rotateX(5deg);
+        }
+
+        #score-title {
+            font-size: 1.5rem;
+            color: #cbd5e1;
+            margin: 0;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        #score {
+            font-size: 4.5rem;
+            color: var(--primary);
+            text-shadow: 0 0 20px rgba(244, 63, 94, 0.6), 4px 4px 0 #000;
+            margin: -5px 0 0 0;
+            line-height: 1;
+        }
+
+        #combo-container {
+            height: 30px;
+            margin-top: 5px;
+        }
+
+        #combo-text {
+            font-size: 1.8rem;
+            color: var(--accent);
+            text-shadow: 2px 2px 0 #000;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #combo-text.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Öfke Barı */
+        #rage-container {
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            padding: 10px 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 80px;
+        }
+
+        .rage-label {
+            font-size: 1.2rem;
+            color: #cbd5e1;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 0 #000;
+            text-align: center;
+            line-height: 1;
+        }
+
+        #rage-track {
+            width: 30px;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            border: 2px solid #334155;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 5px 10px rgba(0, 0, 0, 0.8);
+        }
+
+        #rage-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(to top, #ef4444, #f59e0b);
+            box-shadow: 0 0 15px #ef4444;
+            transition: height 0.1s ease;
+        }
+
+        /* Karakter Alanı */
+        #character-container {
+            position: relative;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        #image-wrapper {
+            position: relative;
+            border-radius: 50%;
+        }
+
+        #image-wrapper::after {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            right: -15px;
+            bottom: -15px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(244, 63, 94, 0.4) 0%, transparent 70%);
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        body.angry-bg #image-wrapper::after {
+            opacity: 1;
+            animation: pulseGlow 1s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            0% {
+                transform: scale(0.9);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        #amet-img {
+            width: 280px;
+            height: 280px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 8px solid #fff;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 0 10px rgba(255, 255, 255, 0.1);
+            cursor: crosshair;
+            position: relative;
+            z-index: 5;
+            transition: filter 0.2s;
+        }
+
+        #amet-img:active {
+            filter: brightness(1.2) contrast(1.1);
+        }
+
+        /* Gelişmiş Hit Efekti */
+        .shaking {
+            animation: ultraShake 0.3s cubic-bezier(.36, .07, .19, .97) both;
+        }
+
+        @keyframes ultraShake {
+            0% {
+                transform: translate(2px, 2px) rotate(0deg) scale(0.95);
+            }
+
+            10% {
+                transform: translate(-3px, -4px) rotate(-3deg) scale(0.92);
+            }
+
+            20% {
+                transform: translate(-5px, 0px) rotate(3deg) scale(0.88);
+            }
+
+            30% {
+                transform: translate(5px, 4px) rotate(0deg) scale(0.9);
+            }
+
+            40% {
+                transform: translate(2px, -2px) rotate(3deg) scale(0.95);
+                filter: drop-shadow(0 0 20px red);
+            }
+
+            50% {
+                transform: translate(-2px, 4px) rotate(-3deg) scale(0.9);
+            }
+
+            60% {
+                transform: translate(-5px, 2px) rotate(0deg) scale(0.92);
+            }
+
+            70% {
+                transform: translate(5px, 2px) rotate(-3deg) scale(0.95);
+            }
+
+            80% {
+                transform: translate(-2px, -2px) rotate(3deg) scale(0.98);
+            }
+
+            90% {
+                transform: translate(2px, 4px) rotate(0deg) scale(0.99);
+            }
+
+            100% {
+                transform: translate(0px, 0px) rotate(0deg) scale(1);
+                filter: none;
+            }
+        }
+
+        /* Çizgi Roman Tarzı Fırlayan Yazılar */
+        .comic-text {
+            position: absolute;
+            font-size: 3rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #fff;
+            pointer-events: none;
+            z-index: 20;
+            animation: comicPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes comicPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(0deg);
+                opacity: 0;
+            }
+
+            40% {
+                transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2) rotate(var(--rot));
+                opacity: 1;
+            }
+
+            80% {
+                transform: translate(calc(-50% + var(--dx) * 1.2), calc(-50% + var(--dy) * 1.2)) scale(1) rotate(var(--rot));
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(calc(-50% + var(--dx) * 1.5), calc(-50% + var(--dy) * 1.5)) scale(0.5) rotate(var(--rot));
+                opacity: 0;
+            }
+        }
+
+        /* Hasar Partikülleri */
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 15;
+            animation: particleSplash 0.6s ease-out forwards;
+        }
+
+        @keyframes particleSplash {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(var(--px), var(--py)) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Alt Yazı */
+        #motivation-text {
+            font-size: 3.5rem;
+            color: var(--accent);
+            text-shadow: 3px 3px 0 #000, 0 0 20px rgba(251, 191, 36, 0.5);
+            margin-bottom: 8vh;
+            text-align: center;
+            min-height: 4rem;
+            z-index: 10;
+            letter-spacing: 2px;
+            animation: floatText 3s ease-in-out infinite;
+        }
+
+        @keyframes floatText {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Efsanevi Ulti Butonu */
+        #ulti-btn-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        #ulti-btn {
+            background: linear-gradient(135deg, #ff0000, #ff00cc);
+            color: white;
+            font-family: 'Bangers', cursive;
+            font-size: 4rem;
+            letter-spacing: 3px;
+            padding: 20px 50px;
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7), inset 0 5px 0 rgba(255, 255, 255, 0.4), inset 0 -5px 0 rgba(0, 0, 0, 0.2), 0 10px 20px rgba(0, 0, 0, 0.5);
+            cursor: crosshair;
+            text-shadow: 3px 3px 0 #000;
+            transform: scale(0);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #ulti-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.5), transparent);
+            transform: skewX(-20deg);
+        }
+
+        #ulti-btn.visible {
+            transform: scale(1) rotate(-5deg);
+            pointer-events: auto;
+            animation: ultiPulse 1s infinite;
+        }
+
+        #ulti-btn.visible::before {
+            animation: shine 2s infinite;
+        }
+
+        @keyframes shine {
+            100% {
+                left: 200%;
+            }
+        }
+
+        @keyframes ultiPulse {
+            0% {
+                transform: scale(1) rotate(-5deg);
+                box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7), inset 0 5px 0 rgba(255, 255, 255, 0.4), inset 0 -5px 0 rgba(0, 0, 0, 0.2), 0 10px 20px rgba(0, 0, 0, 0.5);
+            }
+
+            50% {
+                transform: scale(1.1) rotate(3deg);
+                box-shadow: 0 0 0 30px rgba(255, 0, 0, 0), inset 0 5px 0 rgba(255, 255, 255, 0.4), inset 0 -5px 0 rgba(0, 0, 0, 0.2), 0 20px 40px rgba(0, 0, 0, 0.7);
+                filter: brightness(1.2);
+            }
+
+            100% {
+                transform: scale(1) rotate(-5deg);
+                box-shadow: 0 0 0 0 rgba(255, 0, 0, 0), inset 0 5px 0 rgba(255, 255, 255, 0.4), inset 0 -5px 0 rgba(0, 0, 0, 0.2), 0 10px 20px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        #ulti-btn:active {
+            transform: scale(0.9) !important;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Epik Flaş ve Ulti Ekranı */
+        #flash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at center, #fff 0%, #ff0000 50%, #000 100%);
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            mix-blend-mode: hard-light;
+        }
+
+        .flash-anim {
+            animation: cinematicFlash 2s forwards;
+        }
+
+        @keyframes cinematicFlash {
+            0% {
+                opacity: 0;
+                transform: scale(1);
+                filter: invert(0);
+            }
+
+            5% {
+                opacity: 1;
+                transform: scale(1.1);
+                filter: invert(1);
+            }
+
+            10% {
+                opacity: 0;
+                transform: scale(1);
+                filter: invert(0);
+            }
+
+            15% {
+                opacity: 0.9;
+                background: #ff0000;
+            }
+
+            30% {
+                opacity: 1;
+                background: radial-gradient(circle, #ff0000, #450a0a);
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        #ulti-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 105;
+            pointer-events: none;
+        }
+
+        #ulti-text {
+            font-size: 6rem;
+            color: #fff;
+            text-align: center;
+            text-shadow: 8px 8px 0 #000, 0 0 50px #ff0000, 0 0 10px #fff;
+            transform: scale(0) rotate(-10deg);
+            opacity: 0;
+            line-height: 1.1;
+        }
+
+        .text-pop {
+            animation: ultiTextPop 2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes ultiTextPop {
+            0% {
+                transform: scale(0) rotate(-20deg) translateZ(-500px);
+                opacity: 0;
+            }
+
+            20% {
+                transform: scale(1.2) rotate(5deg) translateZ(0);
+                opacity: 1;
+            }
+
+            30% {
+                transform: scale(1) rotate(-5deg);
+                opacity: 1;
+                filter: drop-shadow(0 0 30px yellow);
+            }
+
+            80% {
+                transform: scale(1.1) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(2) rotate(10deg);
+                opacity: 0;
+                filter: blur(10px);
+            }
+        }
+
+        .text-highlight {
+            color: #ffcc00;
+            display: block;
+            font-size: 8rem;
+            text-transform: uppercase;
+        }
+
+        /* Ekran Titremesi (Ulti Sırasında) */
+        .screen-shake {
+            animation: earthquake 0.5s infinite;
+        }
+
+        @keyframes earthquake {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            20% {
+                transform: translate(-10px, 10px) rotate(-1deg);
+            }
+
+            40% {
+                transform: translate(10px, -10px) rotate(1deg);
+            }
+
+            60% {
+                transform: translate(-15px, -5px) rotate(-2deg);
+            }
+
+            80% {
+                transform: translate(15px, 5px) rotate(2deg);
+            }
+
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+        }
+
+        /* Mobil Optimizasyon */
+        @media (max-width: 600px) {
+            #ui-layer {
+                margin-top: 10px;
+                width: 95%;
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+
+            #score-card {
+                padding: 10px 20px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            #rage-container {
+                width: 90%;
+                flex-direction: row;
+                justify-content: space-between;
+                padding: 5px 15px;
+                box-sizing: border-box;
+            }
+
+            #rage-track {
+                width: 100%;
+                height: 20px;
+                margin-left: 10px;
+            }
+
+            #rage-bar {
+                width: 0%;
+                height: 100%;
+                bottom: 0;
+                left: 0;
+                background: linear-gradient(to right, #ef4444, #f59e0b);
+            }
+
+            .rage-label {
+                margin: 0;
+                font-size: 1rem;
+            }
+
+            #score {
+                font-size: 3.5rem;
+            }
+
+            #amet-img {
+                width: 220px;
+                height: 220px;
+                border-width: 6px;
+            }
+
+            #motivation-text {
+                font-size: 2.5rem;
+                margin-bottom: 5vh;
+            }
+
+            #ulti-btn {
+                font-size: 2.8rem;
+                padding: 15px 30px;
+            }
+
+            #ulti-text {
+                font-size: 3.5rem;
+            }
+
+            .text-highlight {
+                font-size: 5rem;
+            }
+
+            .comic-text {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="ui-layer">
+        <div id="score-card">
+            <h1 id="score-title">Amet'in Yediği Dayak</h1>
+            <h2 id="score">0</h2>
+            <div id="combo-container">
+                <div id="combo-text">COMBO x2!</div>
+            </div>
+        </div>
+
+        <div id="rage-container">
+            <div class="rage-label">ÖFKE 😡</div>
+            <div id="rage-track">
+                <div id="rage-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="character-container">
+        <div id="image-wrapper">
+            <img id="amet-img" src="normal.png" alt="Amet" draggable="false">
+        </div>
+        <div id="ulti-btn-container">
+            <button id="ulti-btn">ULTİ KULLAN!</button>
+        </div>
+    </div>
+
+    <div id="motivation-text">Hadi, Vurmaya Başla!</div>
+
+    <div id="flash-screen"></div>
+    <div id="ulti-wrapper">
+        <div id="ulti-text">ZEYNEP DELLENDİ<br><span class="text-highlight">KRİTİK HASAR!</span></div>
+    </div>
+
+    <script>
+        // --- Oyun Durumu ---
+        let score = 0;
+        let rage = 0;
+        let combo = 0;
+        let lastHitTime = 0;
+        let comboTimeout;
+        const maxRage = 50;
+        let isUltiReady = false;
+
+        // Çizgi Roman Efekt Kelimeleri ve Renkleri
+        const comicWords = ['BAM!', 'POW!', 'ÇAT!', 'KÜT!', 'GÜM!', 'AHH!', 'SMASH!'];
+        const comicColors = ['#ff0000', '#ffcc00', '#00ffcc', '#ff00ff', '#33ccff', '#ff6600'];
+
+        // BURAYA DİKKAT: Kendi dosyalarımızı buraya bağladık
+        const ametImages = {
+            normal: 'normal.png',
+            injured: 'yarali.png',
+            knockout: 'pert.png'
+        };
+
+        // --- DOM Elemanları ---
+        const scoreEl = document.getElementById('score');
+        const comboTextEl = document.getElementById('combo-text');
+        const imgEl = document.getElementById('amet-img');
+        const motivationEl = document.getElementById('motivation-text');
+        const rageBarEl = document.getElementById('rage-bar');
+        const ultiBtn = document.getElementById('ulti-btn');
+        const flashScreen = document.getElementById('flash-screen');
+        const ultiText = document.getElementById('ulti-text');
+
+        // --- Eventler ---
+        imgEl.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            hitAmet(e);
+        });
+
+        ultiBtn.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            useUlti();
+        });
+
+        document.body.addEventListener('dblclick', e => e.preventDefault());
+
+        // --- Fonksiyonlar ---
+        function hitAmet(e) {
+            const now = Date.now();
+
+            // Combo Sistemi
+            if (now - lastHitTime < 1000) {
+                combo++;
+            } else {
+                combo = 1;
+            }
+            lastHitTime = now;
+            clearTimeout(comboTimeout);
+            comboTimeout = setTimeout(() => {
+                combo = 0;
+                comboTextEl.classList.remove('active');
+            }, 1000);
+
+            // Combo çarpanı ile puan kazanımı 
+            const multiplier = 1 + Math.floor(combo / 10);
+            score += multiplier;
+
+            // Combo UI Güncellemesi
+            if (combo > 1) {
+                comboTextEl.innerText = `COMBO x${combo}! ` + (multiplier > 1 ? `(+${multiplier})` : '');
+                comboTextEl.classList.add('active');
+                comboTextEl.style.transform = 'scale(1.2)';
+                setTimeout(() => { comboTextEl.style.transform = 'scale(1)'; }, 100);
+            }
+
+            // Tıklama Efekti
+            imgEl.classList.remove('shaking');
+            void imgEl.offsetWidth;
+            imgEl.classList.add('shaking');
+
+            // Koordinatları al
+            let x, y;
+            if (e && e.clientX) {
+                x = e.clientX;
+                y = e.clientY;
+            } else {
+                const rect = imgEl.getBoundingClientRect();
+                x = rect.left + rect.width / 2;
+                y = rect.top + rect.height / 2;
+            }
+
+            // Çizgi roman efekti ve kan partikülleri fırlat
+            spawnComicText(x, y);
+            spawnParticles(x, y, 3);
+
+            // Öfke Barı Doldurma
+            if (!isUltiReady) {
+                rage++;
+                updateRage();
+            }
+
+            updateGameGraphics();
+        }
+
+        function spawnComicText(x, y) {
+            const el = document.createElement('div');
+            el.className = 'comic-text';
+
+            const randomWord = comicWords[Math.floor(Math.random() * comicWords.length)];
+            const randomColor = comicColors[Math.floor(Math.random() * comicColors.length)];
+
+            el.innerText = randomWord;
+            el.style.color = randomColor;
+            el.style.textShadow = `3px 3px 0 #000, 0 0 15px ${randomColor}`;
+
+            const dx = (Math.random() - 0.5) * 200 + 'px';
+            const dy = (Math.random() - 0.5) * 200 - 100 + 'px';
+            const rot = (Math.random() - 0.5) * 45 + 'deg';
+
+            el.style.setProperty('--dx', dx);
+            el.style.setProperty('--dy', dy);
+            el.style.setProperty('--rot', rot);
+
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        function spawnParticles(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+
+                const px = (Math.random() - 0.5) * 150 + 'px';
+                const py = (Math.random() - 0.5) * 150 + 'px';
+
+                p.style.setProperty('--px', px);
+                p.style.setProperty('--py', py);
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+
+                if (Math.random() > 0.7) {
+                    p.style.background = '#60a5fa'; // mavi ter
+                }
+
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 600);
+            }
+        }
+
+        function updateGameGraphics() {
+            scoreEl.innerText = score;
+
+            if (score > 50) {
+                document.body.classList.add('angry-bg');
+            } else {
+                document.body.classList.remove('angry-bg');
+            }
+
+            // BURAYA DİKKAT: .png uzantılı yerel dosyalarla çalışacak şekilde mantığı düzelttik
+            if (score >= 150) {
+                motivationEl.innerText = 'AMET TAMAMEN PERT!';
+                motivationEl.style.color = '#ff0000';
+            } else if (score >= 100) {
+                motivationEl.innerText = 'AMET BAYILDI!';
+                motivationEl.style.color = '#f97316';
+                if (!imgEl.src.endsWith(ametImages.knockout)) {
+                    imgEl.src = ametImages.knockout;
+                }
+            } else if (score >= 50) {
+                motivationEl.innerText = 'KIR BURNUNU!';
+                motivationEl.style.color = '#fbbf24';
+                if (!imgEl.src.endsWith(ametImages.injured)) {
+                    imgEl.src = ametImages.injured;
+                }
+            } else if (score >= 25) {
+                motivationEl.innerText = 'ACIMA, DEVAM ET!';
+            }
+        }
+
+        function updateRage() {
+            let percentage = (rage / maxRage) * 100;
+            if (percentage > 100) percentage = 100;
+
+            if (window.innerWidth <= 600) {
+                rageBarEl.style.width = percentage + '%';
+                rageBarEl.style.height = '100%';
+            } else {
+                rageBarEl.style.height = percentage + '%';
+                rageBarEl.style.width = '100%';
+            }
+
+            if (rage >= maxRage) {
+                isUltiReady = true;
+                ultiBtn.classList.add('visible');
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            if (rage > 0 && rage < maxRage) updateRage();
+        });
+
+        function useUlti() {
+            if (!isUltiReady) return;
+
+            isUltiReady = false;
+            rage = 0;
+            updateRage();
+            ultiBtn.classList.remove('visible');
+
+            document.body.classList.add('screen-shake');
+            score += 1000;
+            updateGameGraphics();
+
+            flashScreen.classList.add('flash-anim');
+            ultiText.classList.add('text-pop');
+
+            const rect = imgEl.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+
+            for (let i = 0; i < 40; i++) {
+                setTimeout(() => {
+                    spawnComicText(cx + (Math.random() - 0.5) * 100, cy + (Math.random() - 0.5) * 100);
+                    spawnParticles(cx, cy, 5);
+                }, i * 40);
+            }
+
+            setTimeout(() => {
+                flashScreen.classList.remove('flash-anim');
+                ultiText.classList.remove('text-pop');
+                document.body.classList.remove('screen-shake');
+            }, 2000);
+        }
+    </script>
+</body>
+
+</html>
